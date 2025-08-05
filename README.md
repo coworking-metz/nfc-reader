@@ -19,7 +19,7 @@ It also **disables the default beep** of the reader to provide a silent, backgro
 
 ## 🖥️ Compatible NFC Readers
 
-This script is built specifically for the **[ACS ACR122U-A9 USB NFC reader](https://www.acs.com.hk/en/products/150/acr122u-usb-nfc-reader/)**.
+This script is built specifically for the **[ACS ACR122U-A9 USB NFC reader](https://www.acs.com.hk/en/products/3/acr122u-usb-nfc-reader/)**.
 
 Other PC/SC-compatible readers *may* work but are **not guaranteed**, especially for beep deactivation.
 
