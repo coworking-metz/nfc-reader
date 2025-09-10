@@ -5,6 +5,28 @@ from smartcard.util import toHexString
 from smartcard.Exceptions import NoCardException
 from smartcard.scard import *
 import pyperclip
+import os
+import sys
+
+if os.name == "nt":
+    import msvcrt
+    lock_file = open("script.lock", "w")
+
+    try:
+        msvcrt.locking(lock_file.fileno(), msvcrt.LK_NBLCK, 1)
+    except OSError:
+        print("Une autre instance du script est déjà en cours.")
+        sys.exit(1)
+
+else:
+    import fcntl
+    lock_file = open("script.lock", "w")
+
+    try:
+        fcntl.flock(lock_file, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except OSError:
+        print("Une autre instance du script est déjà en cours.")
+        sys.exit(1)
 
 # Liste les lecteurs NFC disponibles
 r = readers()
