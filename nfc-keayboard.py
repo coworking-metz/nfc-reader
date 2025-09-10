@@ -5,28 +5,54 @@ from smartcard.util import toHexString
 from smartcard.Exceptions import NoCardException
 from smartcard.scard import *
 import pyperclip
+
 import os
 import sys
+import threading
 
-if os.name == "nt":
-    import msvcrt
-    lock_file = open("script.lock", "w")
+LOCKFILE = "script.lock"
+LOCK_TIMEOUT = 10  # secondes
+LOCK_UPDATE = 5    # secondes
 
-    try:
-        msvcrt.locking(lock_file.fileno(), msvcrt.LK_NBLCK, 1)
-    except OSError:
-        print("Une autre instance du script est déjà en cours.")
-        sys.exit(1)
+def acquire_lock():
+    """Vérifie l'ancienneté du lockfile et tente d'acquérir le verrou.
+    Si le lockfile existe mais a plus de LOCK_TIMEOUT secondes, il est supprimé.
+    Si un autre processus tient le verrou, on quitte.
+    """
+    if os.path.exists(LOCKFILE):
+        age = time.time() - os.path.getmtime(LOCKFILE)
+        if age > LOCK_TIMEOUT:
+            try:
+                os.remove(LOCKFILE)
+                print("⚠️ Lock expiré, suppression du fichier.")
+            except OSError:
+                print("Impossible de supprimer le lockfile.")
+                sys.exit(1)
+        else:
+            print("Une autre instance du script est déjà en cours.")
+            sys.exit(1)
 
-else:
-    import fcntl
-    lock_file = open("script.lock", "w")
+    # Crée le lockfile initial
+    with open(LOCKFILE, "w") as f:
+        f.write(str(os.getpid()))
 
-    try:
-        fcntl.flock(lock_file, fcntl.LOCK_EX | fcntl.LOCK_NB)
-    except OSError:
-        print("Une autre instance du script est déjà en cours.")
-        sys.exit(1)
+def refresh_lock():
+    """Met à jour régulièrement le lockfile avec le PID et un timestamp."""
+    while True:
+        try:
+            with open(LOCKFILE, "w") as f:
+                f.write(f"{os.getpid()} {int(time.time())}")
+        except OSError:
+            pass
+        time.sleep(LOCK_UPDATE)
+
+# 🔒 Initialisation du verrou
+acquire_lock()
+
+# 🔄 Thread de mise à jour du lockfile
+t = threading.Thread(target=refresh_lock, daemon=True)
+t.start()
+
 
 # Liste les lecteurs NFC disponibles
 r = readers()
